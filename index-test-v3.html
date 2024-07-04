@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+        <style>
+            #map{
+                position: absolute;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                right: 0;
+            }   
+			#b{
+			position: absolute;
+				z-index: 9999;
+				width: 100px;
+				height: 100px;
+			}
+			
+			@media print {
+			#map{
+                position: absolute;
+                z-index: 99999;
+            }   
+            body {
+                font-family: Arial, sans-serif;
+                color: black;
+            }
+            .no-print {
+                display: none;
+            }
+            .print-header {
+                display: block;
+                text-align: center;
+                margin-bottom: 20px;
+            }
+			@page {
+                size: auto; /* Use size:auto to disable header and footer */
+                margin: 10px; /* Optional: Set margins to 0 */
+				size: landscape;
+            }
+        }
+
+        </style>
+
+    </head>
+    <body id="body">
+        <div id="map"></div>
+		<button id="b">print!</button>
+        <script>
+            var map = L.map('map').setView([51.5, -0.09], 20)
+            L.tileLayer('https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=CSpPZSldjnA7HWClnOa1', {
+                attribution: '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>'
+            }).addTo(map)
+
+			
+map.options.zoomSnap = 0.0001; // Snap to half zoom levels (adjust as needed)
+
+        // Optionally, set zoomDelta for smooth zooming
+        map.options.zoomDelta = 0.5;
+					
+			
+			
+			var cornerToRezsie = '';
+			var rezisable = false;
+			var isDragging = false;
+			var isRezising = false;		
+			var rectangle = null;
+			var width = 0;
+			var height = 0;
+			var ratio = 0;
+			
+			addRectangle()
+			
+
+map.fitBounds(rectangle.getBounds());
+map.setMaxBounds(rectangle.getBounds())
+
+  // Calculate maximum zoom level based on rectangle size
+        var maxZoom = map.getBoundsZoom(rectangle.getBounds());
+
+        // Set maximum zoom level for the map
+        map.options.maxZoom = maxZoom;
+
+        // Event listener to prevent zooming out beyond maximum zoom level
+        map.on('zoomend', function () {
+            if (map.getZoom() < maxZoom) {
+                map.setZoom(maxZoom);
+            }
+        });
+		
+		
+		
+		 document.getElementById('b').addEventListener('click', function() {
+        printMapInsideRectangle();
+    });
+	
+	 function printMapInsideRectangle() {
+            window.print();
+	  }
+		
+		
+		adjustMapSizeToRectangle();
+		
+			
+				function adjustMapSizeToRectangle() {
+				var rectangleBounds = rectangle.getBounds();
+				var northEast = rectangleBounds.getNorthEast();
+				var southWest = rectangleBounds.getSouthWest();
+
+				// Calculate width and height of the rectangle
+				var width = Math.abs(northEast.lng - southWest.lng) * 29500;
+				var height = Math.abs(northEast.lat - southWest.lat);
+
+				// Adjust map container width
+				document.getElementById('map').style.width = width + 'px';
+				document.getElementById('body').style.width = width + 'px';
+				// Invalidate map size to update layout
+				map.invalidateSize();
+			}
+		
+				
+			function addRectangle(){
+					// Adjust width and height to maintain A3 aspect ratio
+					var aspectRatio = 140 / 99;
+			
+					var center = map.getCenter();
+					width = 0.0161 * 2 * aspectRatio;
+					height = 0.01 * 2;
+					
+					ratio = height / width;
+					// Adjust this value based on your desired size
+					var bounds = [
+						[center.lat - height / 2, center.lng - width / 2],
+						[center.lat + height / 2, center.lng + width / 2]
+					];
+
+					// Create the rectangle and add it to the map
+					rectangle = L.rectangle(bounds, {
+					color: "grey",
+					weight: 2,
+					dashArray: '5, 5' 
+				}).addTo(map);
+			}
+			
+			function updateRectangleBounds(mousePos, corner) {
+				var currentBounds = rectangle.getBounds();
+				var newBounds;
+
+				switch (corner) {
+					case 'nw':
+						newBounds = L.latLngBounds(mousePos, currentBounds.getSouthEast());
+						break;
+					case 'ne':
+						newBounds = L.latLngBounds(L.latLng(mousePos.lat, currentBounds.getSouthWest().lng), L.latLng(currentBounds.getSouthWest().lat, mousePos.lng));
+						break;
+					case 'sw':
+						newBounds = L.latLngBounds(L.latLng(currentBounds.getNorthEast().lat, mousePos.lng), L.latLng(mousePos.lat, currentBounds.getNorthEast().lng));
+						break;
+					case 'se':
+						newBounds = L.latLngBounds(currentBounds.getNorthWest(), mousePos);
+						break;
+				}
+				
+				width = newBounds.getNorthEast().lng - newBounds.getSouthWest().lng;
+				height = newBounds.getNorthEast().lat - newBounds.getSouthWest().lat;
+			
+				
+				
+				if (height / width > ratio) {
+					height = width * ratio;
+				} else {
+					width = height / ratio;
+				}
+
+
+				if(corner == 'ne' || corner == 'se'){
+					var adjustedSouthWest = newBounds.getSouthWest();
+					var adjustedNorthEast = L.latLng(adjustedSouthWest.lat + height, adjustedSouthWest.lng + width);
+				}
+				else if(corner == 'nw' || corner == 'sw'){
+					var adjustedNorthEast = newBounds.getNorthEast();
+					var adjustedSouthWest = L.latLng(adjustedNorthEast.lat - height, adjustedNorthEast.lng - width);
+				}
+				
+
+				newBounds = L.latLngBounds(adjustedSouthWest, adjustedNorthEast);
+				rectangle.setBounds(newBounds);
+			}			
+			
+			rectangle.on('mousedown', function(e) {
+				map.dragging.disable();
+				
+				isDragging = true;
+				var mousePos = map.mouseEventToLatLng(e.originalEvent);
+				var rectBounds = rectangle.getBounds().getCenter();
+				clickOffset = {
+					lat: mousePos.lat - rectBounds.lat,
+					lng: mousePos.lng - rectBounds.lng
+				};
+				
+			});
+							
+			map.on('mousemove', function(e) {	
+			var mousePos = map.mouseEventToLatLng(e.originalEvent);
+			
+			if (isDragging) {
+				
+				var newCenter = {
+						lat: mousePos.lat - clickOffset.lat,
+						lng: mousePos.lng - clickOffset.lng
+					};
+
+					rectangle.setBounds(L.latLngBounds(
+						[newCenter.lat - height / 2, newCenter.lng - width / 2],
+						[newCenter.lat + height / 2, newCenter.lng + width / 2]
+					));
+				}
+				
+			if(isRezising){
+				map.dragging.disable();
+				updateRectangleBounds(mousePos, cornerToRezsie)
+			}
+		
+				
+			var corners = [
+				rectangle.getBounds().getNorthWest(),
+				rectangle.getBounds().getNorthEast(),
+				rectangle.getBounds().getSouthWest(),
+				rectangle.getBounds().getSouthEast()
+			];
+
+
+			var cursorStyle = '';
+
+			rezisable = false;	
+			
+			let distanceToZoom = (18 - map.getZoom()) * 100; // Dynamicaly adjusted to Zoom level to get lager (Adjust last number for margin)
+			
+			corners.forEach(function(corner) {
+				if (corner.distanceTo(e.latlng) <= distanceToZoom) { // Adjust the distance threshold as needed
+					
+					rezisable = true;
+				
+					if (corner.equals(rectangle.getBounds().getNorthWest())) {
+						cursorStyle = 'nwse-resize'; // Northwest corner
+						cornerToRezsie = 'nw';
+					} else if (corner.equals(rectangle.getBounds().getNorthEast())) {
+						cursorStyle = 'nesw-resize'; // Northeast corner
+						cornerToRezsie = 'ne';
+					} else if (corner.equals(rectangle.getBounds().getSouthWest())) {
+						cursorStyle = 'nesw-resize'; // Southwest corner
+						cornerToRezsie = 'sw';
+					} else if (corner.equals(rectangle.getBounds().getSouthEast())) {
+						cursorStyle = 'nwse-resize'; // Southeast corner
+						cornerToRezsie = 'se';
+					}
+				}
+				
+
+			});
+
+			map.getContainer().style.cursor = cursorStyle; // Set cursor style						
+			});
+						
+			map.on('mousedown', function(e) {
+				if(rezisable == true){
+					isRezising = true
+				}		
+			});
+						
+			map.on('mouseup', function(e) {
+				map.dragging.enable();
+				isDragging = false;
+				isRezising = false;
+			});
+       
+        </script>
+    </body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaflet Print Rectangle</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map { height: 400px; }
+        button { margin-top: 10px; }
+		
+		@media print {
+            body {
+                font-family: Arial, sans-serif;
+                color: black;
+            }
+            .no-print {
+                display: none;
+            }
+            .print-header {
+                display: block;
+                text-align: center;
+                margin-bottom: 20px;
+            }
+			@page {
+                size: auto; /* Use size:auto to disable header and footer */
+                margin: 10px; /* Optional: Set margins to 0 */
+            }
+			
+
+        }
+    </style>
+</head>
+<body>
+
+
+ <div class="no-print">This text won't be printed.</div>
+ <div class="print-header">This is a print header.</div>
+ <div class="content">This is the content to print.</div>
+
+<div id="map"></div>
+<button id="printButton">Print Map Inside Rectangle</button>
+
+
+
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.3.1/jspdf.umd.min.js"></script>
+
+<script>
+    var map = L.map('map').setView([51.505, -0.09], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+    }).addTo(map);
+
+    var initialBounds = [[51.49, -0.08], [51.5, -0.06]];
+    //var rectangle = L.rectangle(initialBounds, { color: "#ff7800", weight: 1 }).addTo(map);
+
+    document.getElementById('printButton').addEventListener('click', function() {
+        printMapInsideRectangle();
+    });
+
+    function printMapInsideRectangle() {
+       document.querySelector('.content').innerHTML = "This is the customized content for printing.";
+            document.querySelector('.print-header').innerHTML = "Custom Print Header";
+            
+            // Optionally add more custom elements for printing
+            const additionalInfo = document.createElement('div');
+            additionalInfo.innerHTML = "Additional Information for Print.";
+            document.body.appendChild(additionalInfo);
+            
+
+
+
+            var printContents = document.getElementById("map").innerHTML;
+            var originalContents = document.body.innerHTML;
+
+            // Temporarily replace body content with the content to print
+            document.body.innerHTML = printContents;
+
+            // Print the content
+            window.print();
+
+            // Restore original content
+          //  document.body.innerHTML = originalContents;
+			
+			
+			
+			
+            
+            // Optionally clean up after printing if necessary
+            additionalInfo.remove();
+	  }
+</script>
+
+</body>
+</html>
