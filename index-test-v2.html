@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Leaflet Print Example</title>
+		<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+		<style>
+			#map { /* Maintains a A4 aspect ratio */
+				position: absolute;
+				height: 48.65rem;				
+				width: calc(48.9rem * 1.414);
+				z-index: 99999;
+			}
+			
+			.leaflet-control-container{
+				visibility: hidden;
+			}
+			
+			@media print {		
+				.no-print {
+					display: none;
+				}
+
+				.print-header {
+					display: block;
+					text-align: center;
+					margin-bottom: 20px;
+				}
+
+				@page {
+					margin: 0px; 
+					size: landscape;
+				}
+			}
+		</style>
+	</head>
+	<body id="body">
+
+	<div id="map"></div>
+
+	<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+	<script>
+		var map = L.map('map').setView([51.5, -0.09], 1)
+				L.tileLayer('https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=CSpPZSldjnA7HWClnOa1', {
+					attribution: '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>'
+		}).addTo(map)
+		
+		
+		var queryParams = new URLSearchParams(window.location.search);
+		
+		var southWest = L.latLng(queryParams.get('swLat'), queryParams.get('swLng'));
+		var northEast = L.latLng(queryParams.get('neLat'), queryParams.get('neLng'));
+		var bounds = L.latLngBounds(southWest, northEast);
+		
+		map.options.zoomSnap = 0.0001; // Snap to half zoom levels (adjust as needed)
+		// Optionally, set zoomDelta for smooth zooming
+		map.options.zoomDelta = 0.5;
+		
+		map.fitBounds(bounds);
+			map.setMaxBounds(bounds)
+
+		// Calculate maximum zoom level based on rectangle size
+		var maxZoom = map.getBoundsZoom(bounds);
+
+		// Set maximum zoom level for the map
+		map.options.maxZoom = maxZoom;
+
+		// Event listener to prevent zooming out beyond maximum zoom level
+		map.on('zoomend', function () {
+			if (map.getZoom() < maxZoom) {
+					map.setZoom(maxZoom);
+			}
+		});
+			
+		map.dragging.disable();
+		
+		  map.whenReady(function() {
+            setTimeout(onMapLoad, 1000);
+        });
+		function onMapLoad(){
+			console.log("load")
+			window.print();
+			window.close();
+		}
+	</script>
+
+	</body>
+</html>

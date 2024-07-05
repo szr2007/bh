@@ -6,7 +6,7 @@
         <style>
             #map{
                 position: absolute;
-                top: 0;
+				top: 0;
                 left: 0;
                 bottom: 0;
                 right: 0;
@@ -17,50 +17,17 @@
 				width: 100px;
 				height: 100px;
 			}
-			
-			@media print {
-			#map{
-                position: absolute;
-                z-index: 99999;
-            }   
-            body {
-                font-family: Arial, sans-serif;
-                color: black;
-            }
-            .no-print {
-                display: none;
-            }
-            .print-header {
-                display: block;
-                text-align: center;
-                margin-bottom: 20px;
-            }
-			@page {
-                size: auto; /* Use size:auto to disable header and footer */
-                margin: 10px; /* Optional: Set margins to 0 */
-				size: landscape;
-            }
-        }
-
         </style>
-
     </head>
     <body id="body">
         <div id="map"></div>
-		<button id="b">print!</button>
-        <script>
-            var map = L.map('map').setView([51.5, -0.09], 20)
-            L.tileLayer('https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=CSpPZSldjnA7HWClnOa1', {
-                attribution: '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>'
-            }).addTo(map)
-
-			
-map.options.zoomSnap = 0.0001; // Snap to half zoom levels (adjust as needed)
-
-        // Optionally, set zoomDelta for smooth zooming
-        map.options.zoomDelta = 0.5;
-					
-			
+		<button id="b">Print!</button>
+		
+        <script>	
+			var map = L.map('map').setView([51.5, -0.09], 15)
+			L.tileLayer('https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=CSpPZSldjnA7HWClnOa1', {
+				attribution: '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>'
+			}).addTo(map)		
 			
 			var cornerToRezsie = '';
 			var rezisable = false;
@@ -72,55 +39,34 @@ map.options.zoomSnap = 0.0001; // Snap to half zoom levels (adjust as needed)
 			var ratio = 0;
 			
 			addRectangle()
+
+			var corner1 = rectangle.getBounds().getNorthWest();
+			var corner2 = rectangle.getBounds().getNorthEast();
+			var corner3 = rectangle.getBounds().getSouthEast();
+			var corner4 = rectangle.getBounds().getSouthWest();
+
+			var distanceNorth = corner1.distanceTo(corner2) / 1000; // Distance in kilometers
+			var distanceEast = corner2.distanceTo(corner3) / 1000;  // Distance in kilometers
+
+			console.log('width ' + distanceNorth + ' km');
+			console.log('height ' + distanceEast + ' km');
 			
-
-map.fitBounds(rectangle.getBounds());
-map.setMaxBounds(rectangle.getBounds())
-
-  // Calculate maximum zoom level based on rectangle size
-        var maxZoom = map.getBoundsZoom(rectangle.getBounds());
-
-        // Set maximum zoom level for the map
-        map.options.maxZoom = maxZoom;
-
-        // Event listener to prevent zooming out beyond maximum zoom level
-        map.on('zoomend', function () {
-            if (map.getZoom() < maxZoom) {
-                map.setZoom(maxZoom);
-            }
-        });
-		
-		
-		
-		 document.getElementById('b').addEventListener('click', function() {
-        printMapInsideRectangle();
-    });
+			document.getElementById('b').addEventListener('click', function() {
+				printMapInsideRectangle();
+			});
 	
-	 function printMapInsideRectangle() {
-            window.print();
-	  }
-		
-		
-		adjustMapSizeToRectangle();
-		
-			
-				function adjustMapSizeToRectangle() {
-				var rectangleBounds = rectangle.getBounds();
-				var northEast = rectangleBounds.getNorthEast();
-				var southWest = rectangleBounds.getSouthWest();
-
-				// Calculate width and height of the rectangle
-				var width = Math.abs(northEast.lng - southWest.lng) * 29500;
-				var height = Math.abs(northEast.lat - southWest.lat);
-
-				// Adjust map container width
-				document.getElementById('map').style.width = width + 'px';
-				document.getElementById('body').style.width = width + 'px';
-				// Invalidate map size to update layout
-				map.invalidateSize();
-			}
-		
+			function printMapInsideRectangle() {   
+				var dataToSend = {
+					neLat: rectangle.getBounds().getNorthEast().lat,
+					neLng: rectangle.getBounds().getNorthEast().lng,
+					swLat: rectangle.getBounds().getSouthWest().lat,
+					swLng: rectangle.getBounds().getSouthWest().lng
+				};
 				
+				var queryParams = new URLSearchParams(dataToSend).toString();
+				window.open('index-test-v2.html?' + queryParams, '_blank');
+			}
+					
 			function addRectangle(){
 					// Adjust width and height to maintain A3 aspect ratio
 					var aspectRatio = 140 / 99;
@@ -275,7 +221,7 @@ map.setMaxBounds(rectangle.getBounds())
 				isDragging = false;
 				isRezising = false;
 			});
-       
+			
         </script>
     </body>
 </html>
